@@ -4,83 +4,117 @@
 
 # Pacman - https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
 
+function _pac_aur_clean() {
+    # Script to clean pacman and paru (or your favorite aur helper) cache
+    # Based on scripts from albertored11 and luukvbaal
+    # https://gist.github.com/albertored11/bfc0068f4e43ca0d7ce0af968f7314db
+    # https://gist.github.com/luukvbaal/2c697b5e068471ee989bff8a56507142
+
+    AUR_CACHE_DIR="$HOME/.cache/${1:-paru}/clone"
+
+    AUR_CACHE_REMOVED=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
+    AUR_REMOVED=$(echo $AUR_CACHE_REMOVED | xargs -rd'\n' /usr/bin/paccache -ruvk0 | sed '/\.cache/!d' | cut -d \' -f2 | xargs -rd'\n' dirname)
+    [ -z "$AUR_REMOVED" ] || rm -vrf $AUR_REMOVED
+
+    # Keep latest version for uninstalled native packages, keep two latest versions for installed packages
+    # Get all cache directories for AUR helper (without removed packages)
+    /usr/bin/paccache -vruk1
+    /usr/bin/paccache -vrk2 -c /var/cache/pacman/pkg
+    AUR_CACHE=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
+    echo "$AUR_CACHE" | /usr/bin/paccache -vrk2
+}
+
 function pac() {
     case $1 in
     add)
-    sudo pacman -S ${@:2}
-    ;;
+        if command -v powerpill &>/dev/null; then
+            sudo powerpill -S ${@:2}
+        else
+            sudo pacman -S ${@:2}
+        fi
+        ;;
     remove)
-    sudo pacman -Rs ${@:2}
-    ;;
+        sudo pacman -Rs ${@:2}
+        ;;
     upg)
-    sudo pacman -Syu
-    ;;
+        if command -v powerpill &>/dev/null; then
+            sudo pacman -Sy
+            sudo powerpill -Su
+        else
+            sudo pacman -Syu
+        fi
+        ;;
     upgrade)
-    sudo pacman -Syu
-    ;;
+        if command -v powerpill &>/dev/null; then
+            sudo pacman -Sy
+            sudo powerpill -Su
+        else
+            sudo pacman -Syu
+        fi
+        ;;
     list)
-    if command -v fzf > /dev/null; then
-    pacman -Qq | fzf --preview 'pacman -Qil {}' --layout=reverse --bind 'enter:execute(pacman -Qil {} | less)'
-    else
-    pacman -Qq | less
-    fi
-    ;;
+        if command -v fzf >/dev/null; then
+            pacman -Qq | fzf --preview 'pacman -Qil {}' --layout=reverse --bind 'enter:execute(pacman -Qil {} | less)'
+        else
+            pacman -Qq | less
+        fi
+        ;;
     search)
-    if [[ "$#" == 2 ]]; then
-    if command -v fzf > /dev/null; then
-    pacman -Slq | grep $2 | fzf --preview 'pacman -Si {}' --layout=reverse --bind 'enter:execute(pacman -Si {} | less)'
-    else
-    pacman -Slq | grep $2 | xargs pacman -Si | less
-    fi
-    else
-    if command -v fzf > /dev/null; then
-    pacman -Slq | fzf --preview 'pacman -Si {}' --layout=reverse --bind 'enter:execute(pacman -Si {} | less)'
-    else
-    pacman -Slq | xargs pacman -Si | less
-    fi
-    fi
-    ;;
+        if [[ "$#" == 2 ]]; then
+            if command -v fzf >/dev/null; then
+                pacman -Slq | grep $2 | fzf --preview 'pacman -Si {}' --layout=reverse --bind 'enter:execute(pacman -Si {} | less)'
+            else
+                pacman -Slq | grep $2 | xargs pacman -Si | less
+            fi
+        else
+            if command -v fzf >/dev/null; then
+                pacman -Slq | fzf --preview 'pacman -Si {}' --layout=reverse --bind 'enter:execute(pacman -Si {} | less)'
+            else
+                pacman -Slq | xargs pacman -Si | less
+            fi
+        fi
+        ;;
     prune)
-    if pacman -Qtdq > /dev/null; then
-    sudo pacman -Rns $(pacman -Qtdq)
-    fi
-    ;;
+        if pacman -Qtdq >/dev/null; then
+            sudo pacman -Rns $(pacman -Qtdq)
+        fi
+        ;;
     own)
-    pacman -Qo ${@:2}
-    ;;
+        pacman -Qo ${@:2}
+        ;;
     tree)
-    if command -v pactree > /dev/null; then
-    pactree ${@:2}
-    else
-    echo "Install `pacman-contrib` to use pactree(8)."
-    fi
-    ;;
+        if command -v pactree >/dev/null; then
+            pactree ${@:2}
+        else
+            echo "Install $(pacman-contrib) to use pactree(8)."
+        fi
+        ;;
     why)
-    if command -v pactree > /dev/null; then
-    pactree -r ${@:2}
-    else
-    echo "Install `pacman-contrib` to use pactree(8)."
-    fi
-    ;;
+        if command -v pactree >/dev/null; then
+            pactree -r ${@:2}
+        else
+            echo "Install $(pacman-contrib) to use pactree(8)."
+        fi
+        ;;
     clean)
-    if command -v paccache > /dev/null; then
-    paccache -r
-    else
-    echo "Install `pacman-contrib` to use paccache(8)."
-    fi
-    ;;
+        if command -v paccache >/dev/null; then
+            _pac_aur_clean $2
+        else
+            echo "Install $(pacman-contrib) to use paccache(8)."
+        fi
+        ;;
     esac
 }
 
 # If the completion file doesn't exist yet, we need to autoload it and
 # bind it to `pac`. Otherwise, compinit will have already done that.
 if [[ ! -f "${ZINIT[COMPLETIONS_DIR]:-$ZSH_CACHE_DIR/completions}/_pac" ]]; then
-  typeset -g -A _comps
-  autoload -Uz _pac
-  _comps[pac]=_pac
+    typeset -g -A _comps
+    autoload -Uz _pac
+    _comps[pac]=_pac
 fi
 
-cat >| "${ZINIT[COMPLETIONS_DIR]:-$ZSH_CACHE_DIR/completions}/_pac" <<'EOF'
+cat >|"${ZINIT[COMPLETIONS_DIR]:-$ZSH_CACHE_DIR/completions}/_pac" <<'EOF'
 #compdef pac
 
 # builds command for invoking pacman in a _call_program command - extracts
