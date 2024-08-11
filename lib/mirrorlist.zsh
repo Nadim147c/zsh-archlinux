@@ -17,7 +17,7 @@ function _pacman_get_reflector_opts() {
             '--multi'
             '--prompt=Country: '
             '--header=Use <Tab> key for selecting multiple'
-            '--bind=tab:select+clear-query'
+            '--bind=tab:toggle+clear-query'
             '--preview=printf "%s\n" {+}'
             '--preview-label=Selected Countries'
         )
@@ -101,7 +101,8 @@ function _pacman_update_mirror_list() {
         _pac_print_red "Failed to load reflector options"
     fi
 
-    printf "\e[36m%s\e[0m \e[90m(%s)\e[0m " "You like to create an backup of exist mirror-list" "y/n"
+    _pac_print_prompt "You like to create an backup of exist mirror-list" "y/n"
+
     read -r backup_create
     if [[ -z "$backup_create" || $backup_create =~ ^[Yy]$ ]]; then
         sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.pac_backup
@@ -115,7 +116,7 @@ function _pacman_update_mirror_list() {
 
     sudo reflector --verbose --country="$selected_countries" --age="$age" --protocol="$protocol" --sort="$sort" --save /etc/pacman.d/mirrorlist
 
-    printf '\e[36m%s\e[0m\n' "This is your new mirrorlist: "
+    _pac_print_cyan "$(_pac_print_bold 'This is your new mirrorlist: ')"
     cat /etc/pacman.d/mirrorlist
 
 }

@@ -1,4 +1,5 @@
 local LIB="$(dirname "$0")/lib"
+source "$LIB/clear-cache.zsh"
 source "$LIB/mirrorlist.zsh"
 source "$LIB/print.zsh"
 
@@ -86,20 +87,7 @@ function pac() {
         ;;
     clean)
         if command -v paccache >/dev/null; then
-            printf "\e[31m%s\e[0m" "You are about delete pacman and aur caches. Are you sure? (y/n) "
-            read confirm
-            [[ $confirm =~ ^[Yy]$ ]] || return
-
-            AUR_CACHE_DIR="$HOME/.cache/${2:-paru}/clone"
-
-            AUR_CACHE_REMOVED=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
-            AUR_REMOVED=$(echo $AUR_CACHE_REMOVED | xargs -rd'\n' /usr/bin/paccache -ruvk0 | sed '/\.cache/!d' | cut -d \' -f2 | xargs -rd'\n' dirname)
-            [ -z "$AUR_REMOVED" ] || rm -vrf $AUR_REMOVED
-
-            /usr/bin/paccache -vruk1
-            /usr/bin/paccache -vrk2 -c /var/cache/pacman/pkg
-            AUR_CACHE=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
-            echo "$AUR_CACHE" | /usr/bin/paccache -vrk2
+            _pacman_clear_cache ${@:2}
         else
             _pac_print_red "Install $(pacman-contrib) to use paccache(8)."
         fi
