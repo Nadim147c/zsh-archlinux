@@ -1,34 +1,13 @@
-#######################################
-#               Pacman                #
-#######################################
-
-# Pacman - https://wiki.archlinux.org/title/Pacman/Tips_and_tricks
-
-function _pac_aur_clean() {
-    # Script to clean pacman and paru (or your favorite aur helper) cache
-    # Based on scripts from albertored11 and luukvbaal
-    # https://gist.github.com/albertored11/bfc0068f4e43ca0d7ce0af968f7314db
-    # https://gist.github.com/luukvbaal/2c697b5e068471ee989bff8a56507142
-
-    AUR_CACHE_DIR="$HOME/.cache/${1:-paru}/clone"
-
-    AUR_CACHE_REMOVED=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
-    AUR_REMOVED=$(echo $AUR_CACHE_REMOVED | xargs -rd'\n' /usr/bin/paccache -ruvk0 | sed '/\.cache/!d' | cut -d \' -f2 | xargs -rd'\n' dirname)
-    [ -z "$AUR_REMOVED" ] || rm -vrf $AUR_REMOVED
-
-    # Keep latest version for uninstalled native packages, keep two latest versions for installed packages
-    # Get all cache directories for AUR helper (without removed packages)
-    /usr/bin/paccache -vruk1
-    /usr/bin/paccache -vrk2 -c /var/cache/pacman/pkg
-    AUR_CACHE=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
-    echo "$AUR_CACHE" | /usr/bin/paccache -vrk2
-}
+function _pac_print_seccess() { printf "\e[32m%s\e[0m\n" "$1" }
+function _pac_print_warn() { printf "\e[33m%s\e[0m\n" "$1" }
+function _pac_print_error() { printf "\e[31m%s\e[0m\n" "$1" }
 
 function pac() {
     case $1 in
     add)
-        if command -v powerpill &>/dev/null; then
-            sudo powerpill -S ${@:2}
+        if [[ -z $PACMAN_WRAPPER ]]; then
+            _pac_print_seccess "Using $PACMAN_WRAPPER for installation."
+            sudo $PACMAN_WRAPPER -S ${@:2}
         else
             sudo pacman -S ${@:2}
         fi
@@ -37,17 +16,19 @@ function pac() {
         sudo pacman -Rs ${@:2}
         ;;
     upg)
-        if command -v powerpill &>/dev/null; then
+        if [[ -z $PACMAN_WRAPPER ]]; then
             sudo pacman -Sy
-            sudo powerpill -Su
+            _pac_print_seccess "Using $PACMAN_WRAPPER for upgrading."
+            sudo $PACMAN_WRAPPER -Su
         else
             sudo pacman -Syu
         fi
         ;;
     upgrade)
-        if command -v powerpill &>/dev/null; then
+        if [[ -z $PACMAN_WRAPPER ]]; then
             sudo pacman -Sy
-            sudo powerpill -Su
+            _pac_print_seccess "Using $PACMAN_WRAPPER for upgrading."
+            sudo $PACMAN_WRAPPER -Su
         else
             sudo pacman -Syu
         fi
@@ -76,7 +57,11 @@ function pac() {
         ;;
     prune)
         if pacman -Qtdq >/dev/null; then
-            sudo pacman -Rns $(pacman -Qtdq)
+            printf "\e[31m%s\e[0m" "This process might delete some necessary packages. Are you sure? (y/n) "  
+            read confirm
+            [[ $confirm =~ ^[Yy]$ ]] && sudo pacman -Rns $(pacman -Qtdq)
+        else
+            _pac_print_warn "No unused dependency found."
         fi
         ;;
     own)
@@ -86,21 +71,34 @@ function pac() {
         if command -v pactree >/dev/null; then
             pactree ${@:2}
         else
-            echo "Install $(pacman-contrib) to use pactree(8)."
+            _pac_print_error "Install $(pacman-contrib) to use pactree(8)."
         fi
         ;;
     why)
         if command -v pactree >/dev/null; then
             pactree -r ${@:2}
         else
-            echo "Install $(pacman-contrib) to use pactree(8)."
+            _pac_print_error "Install $(pacman-contrib) to use pactree(8)."
         fi
         ;;
     clean)
         if command -v paccache >/dev/null; then
-            _pac_aur_clean $2
+            printf "\e[31m%s\e[0m" "You are about delete pacman and aur caches. Are you sure? (y/n) "  
+            read confirm
+            [[ $confirm =~ ^[Yy]$ ]] || exit 1
+
+            AUR_CACHE_DIR="$HOME/.cache/${2:-paru}/clone"
+
+            AUR_CACHE_REMOVED=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
+            AUR_REMOVED=$(echo $AUR_CACHE_REMOVED | xargs -rd'\n' /usr/bin/paccache -ruvk0 | sed '/\.cache/!d' | cut -d \' -f2 | xargs -rd'\n' dirname)
+            [ -z "$AUR_REMOVED" ] || rm -vrf $AUR_REMOVED
+
+            /usr/bin/paccache -vruk1
+            /usr/bin/paccache -vrk2 -c /var/cache/pacman/pkg
+            AUR_CACHE=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
+            echo "$AUR_CACHE" | /usr/bin/paccache -vrk2
         else
-            echo "Install $(pacman-contrib) to use paccache(8)."
+            _pac_print_error "Install $(pacman-contrib) to use paccache(8)."
         fi
         ;;
     esac
