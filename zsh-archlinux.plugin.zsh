@@ -1,12 +1,12 @@
-function _pac_print_seccess() { printf "\e[32m%s\e[0m\n" "$1" }
-function _pac_print_warn() { printf "\e[33m%s\e[0m\n" "$1" }
-function _pac_print_error() { printf "\e[31m%s\e[0m\n" "$1" }
+local LIB="$(dirname "$0")/lib"
+source "$LIB/mirrorlist.zsh"
+source "$LIB/print.zsh"
 
 function pac() {
     case $1 in
     add)
-        if [[ -z $PACMAN_WRAPPER ]]; then
-            _pac_print_seccess "Using $PACMAN_WRAPPER for installation."
+        if [[ -n $PACMAN_WRAPPER ]]; then
+            _pac_print_green "Using $PACMAN_WRAPPER for installation."
             sudo $PACMAN_WRAPPER -S ${@:2}
         else
             sudo pacman -S ${@:2}
@@ -16,18 +16,18 @@ function pac() {
         sudo pacman -Rs ${@:2}
         ;;
     upg)
-        if [[ -z $PACMAN_WRAPPER ]]; then
+        if [[ -n $PACMAN_WRAPPER ]]; then
             sudo pacman -Sy
-            _pac_print_seccess "Using $PACMAN_WRAPPER for upgrading."
+            _pac_print_green "Using $PACMAN_WRAPPER for upgrading."
             sudo $PACMAN_WRAPPER -Su
         else
             sudo pacman -Syu
         fi
         ;;
     upgrade)
-        if [[ -z $PACMAN_WRAPPER ]]; then
+        if [[ -n $PACMAN_WRAPPER ]]; then
             sudo pacman -Sy
-            _pac_print_seccess "Using $PACMAN_WRAPPER for upgrading."
+            _pac_print_green "Using $PACMAN_WRAPPER for upgrading."
             sudo $PACMAN_WRAPPER -Su
         else
             sudo pacman -Syu
@@ -57,11 +57,11 @@ function pac() {
         ;;
     prune)
         if pacman -Qtdq >/dev/null; then
-            printf "\e[31m%s\e[0m" "This process might delete some necessary packages. Are you sure? (y/n) "  
+            printf "\e[31m%s\e[0m" "This process might delete some necessary packages. Are you sure? (y/n) "
             read confirm
             [[ $confirm =~ ^[Yy]$ ]] && sudo pacman -Rns $(pacman -Qtdq)
         else
-            _pac_print_warn "No unused dependency found."
+            _pac_print_yellow "No unused dependency found."
         fi
         ;;
     own)
@@ -71,21 +71,24 @@ function pac() {
         if command -v pactree >/dev/null; then
             pactree ${@:2}
         else
-            _pac_print_error "Install $(pacman-contrib) to use pactree(8)."
+            _pac_print_red "Install $(pacman-contrib) to use pactree(8)."
         fi
         ;;
     why)
         if command -v pactree >/dev/null; then
             pactree -r ${@:2}
         else
-            _pac_print_error "Install $(pacman-contrib) to use pactree(8)."
+            _pac_print_red "Install $(pacman-contrib) to use pactree(8)."
         fi
+        ;;
+    mirrors)
+        _pacman_update_mirror_list ${@:2}
         ;;
     clean)
         if command -v paccache >/dev/null; then
-            printf "\e[31m%s\e[0m" "You are about delete pacman and aur caches. Are you sure? (y/n) "  
+            printf "\e[31m%s\e[0m" "You are about delete pacman and aur caches. Are you sure? (y/n) "
             read confirm
-            [[ $confirm =~ ^[Yy]$ ]] || exit 1
+            [[ $confirm =~ ^[Yy]$ ]] || return
 
             AUR_CACHE_DIR="$HOME/.cache/${2:-paru}/clone"
 
@@ -98,7 +101,7 @@ function pac() {
             AUR_CACHE=$(find "$AUR_CACHE_DIR" -maxdepth 1 -mindepth 1 -type d | xargs -rd'\n' printf "-c%s\n")
             echo "$AUR_CACHE" | /usr/bin/paccache -vrk2
         else
-            _pac_print_error "Install $(pacman-contrib) to use paccache(8)."
+            _pac_print_red "Install $(pacman-contrib) to use paccache(8)."
         fi
         ;;
     esac
@@ -164,6 +167,22 @@ _pacman_completions_installed_packages() {
 	compadd "$@" -a packages
 }
 
+# provides completions for aur helpers
+_pacman_completions_aur_helpers() {
+    local -a aur_helpers 
+    aur_helpers=(yay paru pikaur aura aurman pacaur trizen)
+	compadd "$@" -a aur_helpers
+}
+
+# provides completions for aur helpers
+_pacman_completions_mirrors_update() {
+    local -a options
+    options=("-u:Update reflector options." "--update-options:Update reflector options.")
+	#compadd "$@" -a options
+    _describe 'mirrors_update' options
+}
+
+
 local state com cur
 local -a opts
 local -a coms
@@ -180,7 +199,7 @@ done
 
 if [[ $cur == $com ]]; then
     state="command"
-    coms+=("add:Installing packages." "remove:Removing packages." "upg:Upgrading packages." "list:List all the packages installed." "search:Search the package online." "prune:Removing unused packages (orphans)." "own:Which package a file in the file system belongs to." "tree:View the dependency tree of a package." "why:View the dependant tree of a package." "clean:Cleaning the package cache.")
+    coms+=("add:Installing packages." "remove:Removing packages." "upg:Upgrading packages." "list:List all the packages installed." "search:Search the package online." "prune:Removing unused packages (orphans)." "own:Which package a file in the file system belongs to." "tree:View the dependency tree of a package." "why:View the dependant tree of a package." "mirrors:Update mirror list using reflector." "clean:Cleaning the package cache.")
 fi
 
 case $state in
@@ -195,11 +214,17 @@ case $state in
         (remove)
             _arguments '*:package:_pacman_completions_installed_packages'
         ;;
+        (mirrors)
+            _arguments '*:package:_pacman_completions_mirrors_update'
+        ;;
         (own)
             _arguments '*:file:_files'
         ;;
         (tree)
             _arguments '*:package:_pacman_completions_installed_packages'
+        ;;
+        (clean)
+            _arguments '*:package:_pacman_completions_aur_helpers'
         ;;
         (why)
             _arguments '*:package:_pacman_completions_installed_packages'
