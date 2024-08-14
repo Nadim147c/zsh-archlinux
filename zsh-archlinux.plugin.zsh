@@ -16,14 +16,8 @@ function pac() {
     remove)
         sudo pacman -Rs ${@:2}
         ;;
-    upg)
-        if [[ -n $PACMAN_WRAPPER ]]; then
-            sudo pacman -Sy
-            _pac_print_green "Using $PACMAN_WRAPPER for upgrading."
-            sudo $PACMAN_WRAPPER -Su
-        else
-            sudo pacman -Syu
-        fi
+    rm)
+        pac remove ${@:2}
         ;;
     upgrade)
         if [[ -n $PACMAN_WRAPPER ]]; then
@@ -33,6 +27,9 @@ function pac() {
         else
             sudo pacman -Syu
         fi
+        ;;
+    upg)
+        pac upgrade ${@:2}
         ;;
     list)
         if command -v fzf >/dev/null; then
