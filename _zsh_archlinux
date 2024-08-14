@@ -96,6 +96,9 @@ case $state in
         (remove)
             _arguments '*:package:_pacman_completions_installed_packages'
         ;;
+        (rm)
+            _arguments '*:package:_pacman_completions_installed_packages'
+        ;;
         (mirrors)
             _arguments '*:package:_pacman_completions_mirrors_update'
         ;;
