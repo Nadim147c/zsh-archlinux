@@ -20,12 +20,22 @@ function pac() {
         pac remove ${@:2}
         ;;
     upgrade)
-        if [[ -n $PACMAN_WRAPPER ]]; then
-            sudo pacman -Sy
-            _pac_print_green "Using $PACMAN_WRAPPER for upgrading."
-            sudo $PACMAN_WRAPPER -Su
+        if [[ $# -gt 1 ]]; then
+            if [[ -n $PACMAN_WRAPPER ]]; then
+                sudo pacman -Sy
+                _pac_print_green "Using $PACMAN_WRAPPER for upgrading."
+                sudo $PACMAN_WRAPPER -S ${@:2}
+            else
+                sudo pacman -Sy ${@:2}
+            fi
         else
-            sudo pacman -Syu
+            if [[ -n $PACMAN_WRAPPER ]]; then
+                sudo pacman -Sy
+                _pac_print_green "Using $PACMAN_WRAPPER for upgrading."
+                sudo $PACMAN_WRAPPER -Su
+            else
+                sudo pacman -Syu
+            fi
         fi
         ;;
     upg)

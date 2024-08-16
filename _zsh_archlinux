@@ -81,7 +81,21 @@ done
 
 if [[ $cur == $com ]]; then
     state="command"
-    coms+=("add:Installing packages." "remove:Removing packages." "upgrade:Upgrading packages." "list:List all the packages installed." "search:Search the package online." "prune:Removing unused packages (orphans)." "own:Which package a file in the file system belongs to." "tree:View the dependency tree of a package." "why:View the dependant tree of a package." "mirrors:Update mirror list using reflector." "clean:Cleaning the package cache.")
+    coms+=(
+        "add:Installing packages."
+        "remove:Removing packages." 
+        "rm:Removing packages." 
+        "upgrade:Upgrading packages." 
+        "upg:Upgrading packages." 
+        "list:List all the packages installed."
+        "search:Search the package online." 
+        "prune:Removing unused packages (orphans)."
+        "own:Which package a file in the file system belongs to."
+        "tree:View the dependency tree of a package."
+        "why:View the dependant tree of a package."
+        "mirrors:Updating mirror list using reflector."
+        "clean:Cleaning the package cache."
+    )
 fi
 
 case $state in
@@ -92,6 +106,12 @@ case $state in
     case "$com" in
         (add)
             _arguments '*:package:_pacman_completions_all_packages'
+        ;;
+        (upgrade)
+            _arguments '*:package:_pacman_completions_installed_packages'
+        ;;
+        (upg)
+            _arguments '*:package:_pacman_completions_installed_packages'
         ;;
         (remove)
             _arguments '*:package:_pacman_completions_installed_packages'
