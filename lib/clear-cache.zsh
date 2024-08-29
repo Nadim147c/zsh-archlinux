@@ -17,7 +17,7 @@ function _pacman_clear_cache() {
     AUR_REMOVED=$(echo $AUR_CACHE_REMOVED | xargs -rd'\n' $_PACCACHE -ruvk0 | sed '/\.cache/!d' | cut -d \' -f2 | xargs -rd'\n' -n1 dirname)
     if [[ -z "$AUR_REMOVED" ]]; then
         while IFS= read -r line; do
-            rm -rf "$line" && echo "removed: '$line'"
+            [[ -n "$line" ]] && rm -rf "$line" && echo "removed: '$line'"
         done <<<"$AUR_REMOVED"
     fi
 

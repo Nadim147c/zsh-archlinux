@@ -102,5 +102,42 @@ function pac() {
             _pac_print_red "Install $(pacman-contrib) to use paccache(8)."
         fi
         ;;
+    *)
+        echo $'pac - A powerfull help functions for pacman
+
+Usage:
+  pac [command] [options]
+
+Commands:
+  add        Installing packages.
+  remove     Removing packages.
+  rm         Removing packages.
+  upgrade    Upgrading packages.
+  upg        Upgrading packages.
+  list       List all the packages installed.
+  search     Search the package online.
+  prune      Removing unused packages (orphans).
+  own        Identify which package a file in the file system belongs to.
+  tree       View the dependency tree of a package.
+  why        View the dependant tree of a package.
+  mirrors    Updating mirror list using reflector.
+  clean      Cleaning the package cache.
+
+Options:
+  -h, --help  Show this help message and exit.
+
+Examples:
+  pac add <package_name>       # Install a package
+  pac rm <package_name>        # Remove a package
+  pac upg                      # Upgrade all packages
+  pac list                     # List all installed packages
+  pac search <package_name>    # Search for a package online
+  pac prune                    # Remove orphaned packages
+  pac own <file_path>          # Find the package owning a specific file
+  pac tree <package_name>      # Display the dependency tree of a package
+  pac why <package_name>       # Display the dependant tree of a package
+  pac mirrors                  # Update the mirror list
+  pac clean                    # Clean the package cache'
+        ;;
     esac
 }

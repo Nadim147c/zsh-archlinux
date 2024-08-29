@@ -95,6 +95,7 @@ if [[ $cur == $com ]]; then
         "why:View the dependant tree of a package."
         "mirrors:Updating mirror list using reflector."
         "clean:Cleaning the package cache."
+        "help:Show help for pac command."
     )
 fi
 
