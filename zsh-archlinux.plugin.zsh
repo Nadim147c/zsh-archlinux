@@ -68,7 +68,7 @@ function pac() {
         ;;
     prune)
         if pacman -Qtdq >/dev/null; then
-            printf "\e[31m%s\e[0m" "This process might delete some necessary packages. Are you sure? (y/n) "
+            printf "\e[31m%s\e[0m" "This process might delete some necessary packages. Are you sure? (y/N) "
             read confirm
             [[ $confirm =~ ^[Yy]$ ]] && sudo pacman -Rns $(pacman -Qtdq)
         else

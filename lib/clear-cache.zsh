@@ -1,5 +1,5 @@
 function _pacman_clear_cache() {
-    printf "\e[31m%s\e[0m" "You are about delete pacman and aur caches. Are you sure? (y/n) "
+    printf "\e[31m%s\e[0m" "You are about delete pacman and aur caches. Are you sure? (y/N) "
     read -r confirm
     [[ $confirm =~ ^[Yy]$ ]] || return
 

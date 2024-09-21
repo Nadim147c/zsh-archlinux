@@ -101,7 +101,7 @@ function _pacman_update_mirror_list() {
         _pac_print_red "Failed to load reflector options"
     fi
 
-    _pac_print_prompt "You like to create an backup of exist mirror-list" "y/n"
+    _pac_print_prompt "You like to create an backup of exist mirror-list" "y/N"
 
     read -r backup_create
     if [[ -z "$backup_create" || $backup_create =~ ^[Yy]$ ]]; then
