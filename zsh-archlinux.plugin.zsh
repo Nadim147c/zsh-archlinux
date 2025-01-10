@@ -11,9 +11,9 @@ function pac() {
     add)
         if [[ -n $PACMAN_WRAPPER ]]; then
             _pac_print_green "Using $PACMAN_WRAPPER for installation."
-            sudo $PACMAN_WRAPPER -S ${@:2}
+            sudo $PACMAN_WRAPPER -S --needed ${@:2}
         else
-            sudo pacman -S ${@:2}
+            sudo pacman -S --needed ${@:2}
         fi
         ;;
     remove)
